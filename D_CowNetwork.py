@@ -7,8 +7,6 @@ def time_calc(list):
     t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2015,1,1)
     return int(t.total_seconds()//60)
 
-
-
 #data = pd.read_csv('RobotMilkings_A6_traffic.csv')
 data = pd.read_csv('RobotMilkings_F4_traffic.csv')
 
@@ -20,13 +18,11 @@ kor=data["Gigacow_Cow_Id"]
 
 """ #data = pd.read_csv('RobotMilkings_A6.csv')
 data = pd.read_csv('RobotMilkings_F4.csv')
-
 data['MilkingStartDateTime']=data['MilkingStartDateTime'].map(time_calc)
 data = data.sort_values(by=['MilkingStartDateTime'])
 data = data.reset_index(drop=True)
 star_time=data['MilkingStartDateTime']
 kor=data["Gigacow_Cow_Id"] """
-
 
 print('-----Time Data-----')
 print(star_time)
@@ -48,8 +44,7 @@ def cow_groups(lst):
     return combs
 
 for i in range(len(kor)-1):
-    """     if abs((star_time[i]-star_time[i+1])) > 1440: # Change lenght
-        break   """
+
     hold.append(int(kor[i]))
     if not abs((star_time[i]-star_time[i+1])) <= time or len(hold) > 4:
         if len(hold) > 1:
