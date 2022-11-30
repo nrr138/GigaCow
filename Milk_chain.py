@@ -2,14 +2,16 @@ import pandas as pd
 import numpy as np
 import datetime
 import itertools
+import math
+import matplotlib.pyplot as plt
 
 def time_calc(list):
     t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2015,1,1)
     return int(t.total_seconds()//60)
 
 #data = pd.read_csv('RobotMilkings_A6_traffic.csv')
-data = pd.read_csv('RobotMilkings_F4.csv')
-
+data = pd.read_csv('RobotMilkings_A6.csv')
+#data = pd.read_csv('test.csv')
 data['MilkingStartDateTime']=data['MilkingStartDateTime'].map(time_calc)
 data = data.sort_values(by=['MilkingStartDateTime'])
 data = data.reset_index(drop=True)
@@ -35,9 +37,11 @@ print('\n------------Data info---------------')
 print('Number of cows in farm:', len(np.unique(np.array(kor))))
 print('------------------------------------\n')
 hold=[]
-time=1
+time=5
 cow_dict={}
 cow_dict2={}
+cow_dict3={}
+cow_dict4={}
 
 def cow_groups(lst):
     combs = []
@@ -50,46 +54,221 @@ def cow_groups(lst):
 for i in range(len(kor)-1):
 
     hold.append(int(kor[i]))
-    if not abs((star_time[i]-star_time[i+1])) <= time or len(hold) > 2:
+    k=milk[i].item()
+    h=int(kor[i])
+
+    if not math.isnan(k):
+        if h not in cow_dict3:
+            cow_dict4[h]=1
+            cow_dict3[h]=k
+        else:
+            cow_dict4[h]+=1
+            cow_dict3[h]+=k
+    
+    
+    if not abs((star_time[i]-star_time[i+1])) <= time or len(hold) == 2:
+        
         if len(hold) > 1:
-   
-            h=hold[0]
-            print(milk[i]+milk[i])
             
-            if h not in cow_dict: 
-                cow_dict[h]=1
-                cow_dict2[h]=milk[i]
-                    
-            else:
-                cow_dict[h]+=1
-                cow_dict2[h]+=milk[i]
+            h=hold[1]
+        
+             
+            k=milk[i-1].item()
+            if not math.isnan(k):
+                if h not in cow_dict: 
+                    cow_dict[h]=1
+                    cow_dict2[h]=k
+      
+                else:
+                    cow_dict[h]+=1
+                    cow_dict2[h]+=k
+            
+            h=hold[0]
+            
+             
+
+            
+
+                
+                
 
         hold=[]
 
 
 new_dict = {}
 for (key, value) in cow_dict.items():
+    if key in cow_dict4:
+        if value >50:
+            new_dict[key] = [cow_dict2[key]/value, value , cow_dict3[key]/cow_dict4[key], cow_dict4[key]]
 
-    if value > 5:
-
-        new_dict[key] = cow_dict2[key]/value
-
-print_csv = []
+printx = []
+printy = []
 sorted = dict(sorted(new_dict.items(), key=lambda item: item[1], reverse= False))
 for (key, value) in sorted.items():
-    print('Cows: '+ str(key) + '\tNumber: ' + str(value))
-    if value > 150:
-        print_csv.append([key[0],key[1], value])
+    print('Cow: '+ f'{key} \t' + 'milk produced: ' + str(round(value[2],2)) + '\tdata points: ' +  f'{str(value[3])} \t' + 'milk produced for cow ahead: ' + f'{str(round(value[0],2))} \t'+ 'data points: ' +  str(value[1]))
+    
+    printx.append(value[0])
+    printy.append(value[2])
+
+plt.bar(printx,printy, color = 'g', width = 0.05)
+plt.show()
 
 
-# Print export
-import csv
 
-header = ['cow1', 'cow2','num']
-with open('super_network_plot.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(header)
-    writer.writerows(print_csv)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
