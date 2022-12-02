@@ -6,7 +6,7 @@ import math
 import matplotlib.pyplot as plt
 
 def time_calc(list):
-    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2015,1,1)
+    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2022,1,1)
     return int(t.total_seconds()//60)
 
 #data = pd.read_csv('RobotMilkings_A6_traffic.csv')
