@@ -73,7 +73,7 @@ for i in range(len(kor)-1):
         cow_dict={}
 
     hold.append(int(kor[i]))
-    if not abs((star_time[i]-star_time[i+1])) <= time or len(hold) > 5:
+    if not abs((star_time[i]-star_time[i+1])) <= time or len(hold) > 3:
         if len(hold) > 1:
             h = cow_groups(hold)
 
@@ -98,7 +98,9 @@ with open('plot.csv', 'w', newline='') as file:
     writer.writerows(print_csv) """
 
 
-    
+### ----------------------------------------------------------------------------------------------------------------------------------
+### Networks -------------------------------------------------------------------------------------------------------------------------
+### ----------------------------------------------------------------------------------------------------------------------------------
     
 from pyvis.network import Network
 import matplotlib.pyplot as plt
@@ -109,7 +111,7 @@ def network_graph(lst,w):
 
     for pc in lst:
 
-        if pc[2] > 6 and pc[3] == w:
+        if pc[2] > 2 and pc[3] == w:
             G.add_node(str(pc[0]), title=str(pc[0]))
             G.add_node(str(pc[1]), title=str(pc[1]))
             G.add_edge(str(pc[0]), str(pc[1]), value=pc[2])
@@ -128,8 +130,157 @@ def network_graph(lst,w):
     G.show('network_week_'+str(w)+'.html')
 
 
-network_graph(print_csv, 50)
-#network_graph(print_csv, 51)
+import networkx as nx
+import numpy 
+
+def networkx_graph(lst,w):
+    G = nx.Graph()
+
+    for pc in lst:
+
+        if pc[2] > 3 and pc[3] == w:
+            G.add_node(pc[0], label=str(pc[0]))
+            G.add_node(pc[1], label=str(pc[1]))
+            G.add_edge(pc[0], pc[1], value=pc[2] )    
+    
+
+    # Degree/Eigenvector centrality (connected a node is to other nodes)
+    de_cent = nx.degree_centrality(G)
+    #eig_cent = nx.eigenvector_centrality(G)
+    #adj_m= nx.adjacency_matrix(G)
+
+
+    # Average shortest path (how many edges on average we need to go through between two nodes)
+    try:
+        avg_path = nx.average_shortest_path_length(G)
+    except:
+        avg_path = None
+
+    # Maximum shortest path
+    try:
+        max_path = nx.diameter(G)
+    except:
+        max_path = None
+
+
+    # Transistivity (how likely nodes cluster in a network, how likely to form groups)
+    transistivity = nx.transitivity(G)
+
+    # Connectivity (how many edges are needed to be removed for the graph to become disconnected)
+    try:
+        L = nx.normalized_laplacian_matrix(G)
+        e = numpy.linalg.eigvals(L.toarray())
+        e = numpy.sort(e)
+
+        # Spectral radius (approximetly average amount of edged node has)
+        spec_rad = max(e)
+
+        # Fiedler value (algebraic connectivity)
+        Fiedler = e[1]
+
+    except:
+        spec_rad = None
+        Fiedler = None
+
+    adj_m= nx.adjacency_matrix(G)
+    adj_eig = numpy.linalg.eigvals(adj_m.toarray())
+    adj_eig = numpy.sort(adj_eig)
+    #adj_eig = nx.spectrum.laplacian_spectrum(G)
+
+    #nx.draw(G, with_labels = True)
+    #plt.show()
+    return de_cent, avg_path, max_path, transistivity, spec_rad, Fiedler, adj_eig
+
+weeks_iter = range(46,134)
+avg_path = []
+transistivity = [] 
+spec_rad = []
+Fiedler = []
+max_path = []
+de_cent = pd.DataFrame([])
+adj_eig = []
+for i in weeks_iter:
+    dc,a,m,t,sr,f,ae = networkx_graph(print_csv, i)
+    de_cent = de_cent.append(dc,ignore_index=True)
+    avg_path.append(a)
+    max_path.append(m)
+    transistivity.append(t)
+    spec_rad.append(sr)
+    Fiedler.append(f)
+    adj_eig.append(ae)
+
+# Degree centrality
+de_cent_avg = dict(de_cent.mean())
+
+# Eigenvector Similarity
+def min_k(values, min_sum = 0.9):
+    r_total = 0
+    total = sum(values)
+    if total == 0:
+        return len(values)
+    for i in range(len(values)):
+        r_total += values[i]
+        if r_total / total >= min_sum:
+            return i + 1
+    return len(values)
+
+sim = []
+for i in range(len(adj_eig)-1):
+    k1 = min_k(adj_eig[i])
+    k2 = min_k(adj_eig[i+1])
+    k = min(k1,k2)
+    sim.append(sum((adj_eig[i][:k]-adj_eig[i+1][:k])**2))
+
+plt.figure()
+plt.title('Average Degree centrality for weeks '+ str(weeks_iter[0])+'-'+str(weeks_iter[-1]))
+plt.ylabel('Centrality')
+plt.xlabel('Cows')
+plt.bar(de_cent_avg.keys(), de_cent_avg.values(), color='g',width=60)
+
+plt.figure()
+plt.title('Average shortest path')
+plt.ylabel('Average shortest path')
+plt.xlabel('Weeks')
+plt.plot(weeks_iter, avg_path, 'go-')
+
+plt.figure()
+plt.title('Diameter of network')
+plt.ylabel('Diameter')
+plt.xlabel('Weeks')
+plt.plot(weeks_iter, max_path, 'ro')
+
+plt.figure()
+plt.title('Transistivity')
+plt.ylabel('Transistivity')
+plt.xlabel('Weeks')
+plt.plot(weeks_iter, transistivity, 'go-')
+
+plt.figure()
+plt.title('Spectral radius')
+plt.ylabel('Spectral radius')
+plt.xlabel('Weeks')
+plt.plot(weeks_iter, spec_rad, 'go-')
+
+plt.figure()
+plt.title('Fiedler value')
+plt.ylabel('Fiedler value')
+plt.xlabel('Weeks')
+plt.plot(weeks_iter, Fiedler, 'go-')
+
+plt.figure()
+plt.title('Eigenvector Similarity')
+plt.ylabel('Eigenvector Similarity')
+plt.xlabel('Weeks')
+plt.plot(range(46,133), sim, 'go-')
+plt.show()   
+
+
+network_graph(print_csv, 60)
+
+
+### ----------------------------------------------------------------------------------------------------------------------------------
+### Week difference ------------------------------------------------------------------------------------------------------------------
+### ----------------------------------------------------------------------------------------------------------------------------------
 
 def dictcor(d1, d2):
     diff=0
@@ -153,8 +304,8 @@ def dictcor(d1, d2):
                 hold+=1
     if len(d2) == 0:
         return 0
-    return hold/len(d2) """
-
+    return hold/len(d2)
+ """
 def to_dict(lst1, w):
     dict1 = {}
     dict2 = {}
@@ -188,17 +339,30 @@ for i in range(print_csv[-1][3]):
     dw= to_dict(print_csv, i)
     cor = dictcor(dw[0], dw[1])
     rand_week_cor[i] = cor
+    # if len(lst_rand) == 0:
+    #     aver = 0
+    # else:
+    #     aver = sum(lst_rand) / len(lst_rand)
+
+    # k = 0
+    # for n in range(len(print_csv)):
+    #     if print_csv[n][3] == i:
+    #         print_csv[n][2] = aver
+    #         k += 1
+    # dw= to_dict(print_csv, i)
+    # cor = dictcor(dw[0], dw[1])
+    # rand_week_cor[i] = cor
 
 
-plt.figure(1)
+""" plt.figure()
 plt.ylabel('Week correlation')
 plt.xlabel('Weeks')
 plt.bar(list(week_cor.keys()), week_cor.values(), color='g')
 
-plt.figure(2)
+plt.figure()
 plt.title('Random')
 plt.ylabel('Week correlation')
 plt.xlabel('Weeks')
 plt.bar(list(rand_week_cor.keys()), rand_week_cor.values(), color='g')
-plt.show()
+plt.show() """
 

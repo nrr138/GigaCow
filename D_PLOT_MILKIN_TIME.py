@@ -27,6 +27,7 @@ for i in time:
 #data.to_csv('test')
 #print(dict)
 
+plt.title('Milk Robot')
 plt.ylabel('Events')
 plt.xlabel('Days')
 plt.bar(list(dict.keys()), dict.values(), color='g')
