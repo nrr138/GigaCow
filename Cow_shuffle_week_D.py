@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime
+import random
 
 
 # Change date to minutes
@@ -30,12 +31,22 @@ d = data.to_numpy()
 data_shuffle = np.array([])
 hold = np.array([])
 
+
+#[1,2,2,3,3,3] -> [1,2,3,1,2,3]
+
+def shuffle(lst):
+    lstuniq=list(dict.fromkeys(lst))
+
+    for i in range(len(lst)):
+        lst[i] = random.choice(lstuniq)
+    return np.array(lst)
+
 for i in range(len(d)):
     if abs(d[i,0]-d[0,0]) > 10080*week:
         print(week)
         if hold.size != 0:
             if hold.ndim != 1:
-                np.random.shuffle(hold[:,1])
+                hold[:,1] = shuffle(list(hold[:,1]))
             if data_shuffle.size == 0:
                 data_shuffle = hold
             else:
@@ -48,7 +59,7 @@ for i in range(len(d)):
         hold = np.vstack([hold, d[i]])
 if hold.size != 0:  
     if hold.ndim != 1:   
-        np.random.shuffle(hold[:,0])
+        hold[:,1] = shuffle(list(hold[:,1]))
     if data_shuffle.size == 0:
         data_shuffle = hold
     else:
