@@ -51,5 +51,30 @@ g2.to_csv('Waitroom_Traffic_F4.csv', index=False)
 
 
 ### -------------------------------------------------------------------------------------------- ###
-### TestPlot ###
+### Lactations ###
 ### -------------------------------------------------------------------------------------------- ###
+
+Lactation = pd.read_csv('Lactations.csv', sep=';')
+d4 = Lactation[['FarmName_Pseudo','Gigacow_Cow_Id','LactationInfoDate','LactationNumber']]
+
+# Dela upp respektive gård
+g1 = d4[(d4 ['FarmName_Pseudo']=='a624fb9a')] # Sorteringsgrind 2 Trevägsgrind
+g2 = d4[(d4 ['FarmName_Pseudo']=='f454e660')] # Ingångsgrind
+
+g1.to_csv('Lactations_A6.csv', index=False)
+g2.to_csv('Lactations_F4.csv', index=False)
+
+
+### -------------------------------------------------------------------------------------------- ###
+### Insemination ###
+### -------------------------------------------------------------------------------------------- ###
+
+Insemination = pd.read_csv('Insemination.csv', sep=';')
+d5 = Insemination[['FarmName_Pseudo','Gigacow_Cow_Id','InseminationDate']]
+
+# Dela upp respektive gård
+g1 = d5[(d5 ['FarmName_Pseudo']=='a624fb9a')] # Sorteringsgrind 2 Trevägsgrind
+g2 = d5[(d5 ['FarmName_Pseudo']=='f454e660')] # Ingångsgrind
+
+g1.to_csv('Insemination_A6.csv', index=False)
+g2.to_csv('Insemination_F4.csv', index=False)
