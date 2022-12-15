@@ -2,16 +2,15 @@ import pandas as pd
 import datetime
 import matplotlib.pyplot as plt
 
-# Change date to days
-def time_calc(list):
-    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2020,1,1)
-    return int(t.days)
-
 # Change date to weeks
-def time_calc_week(list):
+def time_calc(list):
     t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2020,1,1)
     return int(t.days)//7
 
+# Change date to weeks (for lactation)
+def time_calc_lact(list):
+    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10])) - datetime.datetime(2020,1,1)
+    return int(t.days)//7
 ### -------------------------------------------------------------------------------------------------------------
 ### Traffic events ----------------------------------------------------------------------------------------------
 ### -------------------------------------------------------------------------------------------------------------
@@ -31,9 +30,9 @@ def traffic_event(farm_name):
             dict[i] += 1
 
     plt.figure()
-    plt.title('All traffic events per day. Farm: '+farm_name)
+    plt.title('All traffic events per week. Farm: '+farm_name)
     plt.ylabel('Events')
-    plt.xlabel('Days (after 2020-01-01)')
+    plt.xlabel('Weeks (after 2020-01-01)')
     plt.bar(list(dict.keys()), dict.values(), color='g')
 
 ### -------------------------------------------------------------------------------------------------------------
@@ -55,9 +54,9 @@ def milk_event(farm_name):
             dict[i] += 1
 
     plt.figure()
-    plt.title('Milk Robot data. Farm: '+farm_name)
+    plt.title('Milk Robot data per week. Farm: '+farm_name)
     plt.ylabel('Events')
-    plt.xlabel('Days (after 2020-01-01)')
+    plt.xlabel('Weeks (after 2020-01-01)')
     plt.bar(list(dict.keys()), dict.values(), color='g')
 
 ### -------------------------------------------------------------------------------------------------------------
@@ -69,7 +68,7 @@ def cow_count_week(farm_name):
     data = traffic[['FarmName_Pseudo','Gigacow_Cow_Id','MilkingStartDateTime']]
 
     cow =data['Gigacow_Cow_Id']
-    time=data['MilkingStartDateTime'].map(time_calc_week)
+    time=data['MilkingStartDateTime'].map(time_calc)
 
     # Extract cows from specified farm per week
     dict = {}
@@ -110,23 +109,48 @@ def cow_count_week(farm_name):
 
 
 ### -------------------------------------------------------------------------------------------------------------
+### Lactation_events --------------------------------------------------------------------------------------------
+### -------------------------------------------------------------------------------------------------------------
+def lactation_event(farm_name):
+    robot = pd.read_csv('Lactations.csv', sep=';')
+
+    data = robot[['LactationInfoDate','FarmName_Pseudo']]
+    g = data[(data ['FarmName_Pseudo']==farm_name)]
+
+    time=g['LactationInfoDate'].map(time_calc_lact)
+    dict = {}
+    for i in time:
+        if i not in dict:
+            dict[i] = 1
+        else: 
+            dict[i] += 1
+
+    plt.figure()
+    plt.title('Lactation data per week. Farm: '+farm_name)
+    plt.ylabel('Data amount')
+    plt.xlabel('Weeks (after 2020-01-01)')
+    plt.bar(list(dict.keys()), dict.values(), color='g')
+
+### -------------------------------------------------------------------------------------------------------------
 ### Plots -------------------------------------------------------------------------------------------------------
 ### -------------------------------------------------------------------------------------------------------------
 
 # Traffic event histogram
 traffic_event('a624fb9a')
-plt.show()
 traffic_event('f454e660')
 plt.show()
 
 # Milk event histogram
 milk_event('a624fb9a')
-plt.show()
 milk_event('f454e660')
 plt.show()
 
 # Cows per week and difference histogram
 cow_count_week('a624fb9a')
-plt.show()
 cow_count_week('f454e660')
+plt.show()
+
+# Lactation events
+lactation_event('a624fb9a')
+lactation_event('f454e660')
 plt.show()

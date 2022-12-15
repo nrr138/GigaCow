@@ -13,6 +13,10 @@ def time_calc(list):
     t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2020,1,1)
     return int(t.total_seconds()//60)
 
+# Change date to minutes (for lactation)
+def time_calc_lact(list):
+    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10])) - datetime.datetime(2020,1,1)
+    return int(t.total_seconds()//60)
 ### -------------------------------------------------------------------------------------------------------------
 ### Import Waitroom or Robot Milking data -----------------------------------------------------------------------
 ### -------------------------------------------------------------------------------------------------------------
@@ -26,8 +30,16 @@ def Waitroom_Traffic(farm_name, time, cut):
     kor=data["Gigacow_Cow_Id"]
 
     network=Calc_Network(start_time, kor, time, cut)
-    return network
+    return network, start_time[0]
 
+def Waitroom_Traffic_shuffle(farm_name, time, cut):
+    data = pd.read_csv(farm_name)
+
+    start_time=data['TrafficEventDateTime']
+    kor=data["Gigacow_Cow_Id"]
+
+    network=Calc_Network(start_time, kor, time, cut)
+    return network
 
 def Robot_Milkings(farm_name, time, cut):
     data = pd.read_csv(farm_name)
@@ -38,8 +50,16 @@ def Robot_Milkings(farm_name, time, cut):
     kor=data["Gigacow_Cow_Id"] 
 
     network=Calc_Network(start_time, kor, time, cut)
-    return network
+    return network, start_time[0]
 
+def Robot_Milkings_shuffle(farm_name, time, cut):
+    data = pd.read_csv(farm_name)
+
+    start_time=data['MilkingStartDateTime']
+    kor=data["Gigacow_Cow_Id"] 
+
+    network=Calc_Network(start_time, kor, time, cut)
+    return network
 ### -------------------------------------------------------------------------------------------------------------
 ### Cow network -------------------------------------------------------------------------------------------------
 ### -------------------------------------------------------------------------------------------------------------
@@ -55,19 +75,20 @@ def cow_groups(lst):
 
 # Calculate network
 def Calc_Network(start_time, kor, time, cut):
+    
     hold=[]
     week_network = []
     cow_dict={}
     week = 1
-
+    
     for i in range(len(kor)-1):
-        if abs(start_time[i]-start_time[0]) > 10080*week:
+        if abs(start_time[i] - start_time[0]) > 10080*week:
             week_network = week_network + save_network(cow_dict, week, cut)
             week += 1
             cow_dict={}
 
         hold.append(int(kor[i]))
-        if not abs((start_time[i]-start_time[i+1])) <= time or len(hold) > 3:
+        if not abs((start_time[i]-start_time[i+1])) <= time or len(hold) > 2:
             if len(hold) > 1:
                 h = cow_groups(hold)
 
@@ -102,10 +123,10 @@ def save_network(cow_dict,w,cut):
 ### ----------------------------------------------------------------------------------------------------------------------------------
 
 # Network visulisation
-def network_graph(lst,w):
+def network_graph(lst,w,name):
     # To create an empty undirected graph
     G = Network(height="1000px", width="1200px", bgcolor="#222222", font_color="white",select_menu=True, neighborhood_highlight=True)
-    G.barnes_hut(gravity=-550, central_gravity=0.2)
+    G.barnes_hut(gravity=-500, central_gravity=0.3)
 
     for pc in lst:
 
@@ -124,8 +145,9 @@ def network_graph(lst,w):
 
 
     G.show_buttons(filter_=['physics'])
-    G.toggle_physics(False)
-    G.show('network_vis_week_'+str(w)+'.html')
+    G.toggle_physics(True)
+    G.show(name+'_'+str(w)+'.html')
+
 
 # Networkx graph
 def networkx_graph(lst,w):
@@ -138,7 +160,6 @@ def networkx_graph(lst,w):
 
     # Degree/Eigenvector centrality (connected a node is to other nodes)
     de_cent = nx.degree_centrality(G)
-    #eig_cent = nx.eigenvector_centrality(G)
 
     # Average shortest path (how many edges on average we need to go through between two nodes)
     try:
@@ -220,145 +241,152 @@ def networkx_data(print_csv, w1,w2):
         k = min(k1,k2)
         sim.append(sum((adj_eig[i][:k]-adj_eig[i+1][:k])**2))
 
-    plt.figure()
+    plt.figure(5)
     plt.title('Average Degree centrality for weeks '+ str(weeks_iter[0])+'-'+str(weeks_iter[-1]))
     plt.ylabel('Centrality')
     plt.xlabel('Cows')
-    plt.bar(de_cent_avg.keys(), de_cent_avg.values(), color='g',width=60)
+    plt.bar(de_cent_avg.keys(), de_cent_avg.values(),width=60)
 
-    plt.figure()
-    plt.title('Average shortest path')
+    plt.figure(6)
+    plt.title('Average shortest path for weeks '+ str(weeks_iter[0])+'-'+str(weeks_iter[-1]))
     plt.ylabel('Average shortest path')
     plt.xlabel('Weeks')
-    plt.plot(weeks_iter, avg_path, 'go-')
+    plt.plot(weeks_iter, avg_path, 'o-')
 
-    plt.figure()
+    plt.figure(7)
+    plt.title('Transistivity for weeks '+ str(weeks_iter[0])+'-'+str(weeks_iter[-1]))
+    plt.ylabel('Transistivity')
+    plt.xlabel('Weeks')
+    plt.plot(weeks_iter, transistivity, 'o-')
+
+    """     plt.figure(8)
     plt.title('Diameter of network')
     plt.ylabel('Diameter')
     plt.xlabel('Weeks')
-    plt.plot(weeks_iter, max_path, 'ro')
+    plt.plot(weeks_iter, max_path, 'o')
 
-    plt.figure()
-    plt.title('Transistivity')
-    plt.ylabel('Transistivity')
-    plt.xlabel('Weeks')
-    plt.plot(weeks_iter, transistivity, 'go-')
-
-    plt.figure()
+    plt.figure(9)
     plt.title('Spectral radius')
     plt.ylabel('Spectral radius')
     plt.xlabel('Weeks')
-    plt.plot(weeks_iter, spec_rad, 'go-')
+    plt.plot(weeks_iter, spec_rad, 'o-')
 
-    plt.figure()
+    plt.figure(10)
     plt.title('Fiedler value')
     plt.ylabel('Fiedler value')
     plt.xlabel('Weeks')
-    plt.plot(weeks_iter, Fiedler, 'go-')
+    plt.plot(weeks_iter, Fiedler, 'o-')
 
-    plt.figure()
+    plt.figure(11)
     plt.title('Eigenvector Similarity')
     plt.ylabel('Eigenvector Similarity')
     plt.xlabel('Weeks')
-    plt.plot(range(w1,w2-1), sim, 'go-')
-    plt.show()   
+    plt.plot(range(w1,w2-1), sim, 'o-') """
 
+def lactation_list(farm):
+    lac_data = pd.read_csv(farm)
 
-### ----------------------------------------------------------------------------------------------------------------------------------
-### Week difference ------------------------------------------------------------------------------------------------------------------
-### ----------------------------------------------------------------------------------------------------------------------------------
+    lac_data['LactationInfoDate']=lac_data['LactationInfoDate'].map(time_calc_lact)
+    lac_data = lac_data.sort_values(by=['LactationInfoDate'])
+    lac_data = lac_data.reset_index(drop=True)
 
-# Check dictionary correlation
-def dict_cor(d1, d2):
-    diff=0
-    tot=0
-    for (key) in d1:
-        if key in d2:
-            tot += (d1[key]+d2[key])
-            diff+= (d1[key]+d2[key])-abs(d1[key]-d2[key])
-        else:
-            tot+= d1[key]
-    if tot == 0:
-        return 0
-    return diff/tot
+    return lac_data
 
-""" def dict_cor(d1,d2):
-    hold=0
-    
-    for (key) in d1:
-        if d1[key] > 5:
-            if key in d2:
-                hold+=1
-    if len(d2) == 0:
-        return 0
-    return hold/len(d2) """
+def network_lactation(lst,lst_lac,w,name,time):
+    # To create an empty undirected graph
+    G = Network(height="1000px", width="1200px", bgcolor="#222222", font_color="white",select_menu=True, neighborhood_highlight=True)
+    G.barnes_hut(gravity=-500, central_gravity=0.3)
 
-# List to dictionary
-def to_dict(lst1, w):
-    dict1 = {}
-    dict2 = {}
-    for lst in lst1:
-        if lst[3] == w:
-            dict1[(lst[0], lst[1])] = lst[2]
-    for lst in lst1:
-        if lst[3] == w+1:
-            dict2[(lst[0], lst[1])] = lst[2]
-    return (dict1, dict2)
+    cow_id = lst_lac['Gigacow_Cow_Id']
+    lactation = lst_lac['LactationNumber']
+    date = lst_lac['LactationInfoDate']
+    lac_value = {}
 
-# Check week correlation
-def week_correlation(print_csv):
-    week_cor = {}
-    for i in range(print_csv[-1][3]):
-        dw= to_dict(print_csv, i)
-        cor = dict_cor(dw[0], dw[1])
-        week_cor[i] = cor
+    for i in range(len(cow_id)):
+        if abs(date[i]-time) <= 10080*(w+1):
+            if lactation[i] == 1:
+                lac_value[cow_id[i]] = '#cbd113'
+            elif lactation[i] == 2:
+                lac_value[cow_id[i]] = '#35d119'
+            elif lactation[i] == 3:
+                lac_value[cow_id[i]] = '#157fd6'
+            elif lactation[i] > 3:
+                lac_value[cow_id[i]] = '#bf1ba7'
 
-    rand_week_cor = {}
-    for i in range(print_csv[-1][3]):
-        lst_rand = []
-        for n in range(len(print_csv)):
-            if print_csv[n][3] == i:
-                lst_rand.append(print_csv[n][2])
-        random.shuffle(lst_rand)
-        k = 0
-        for n in range(len(print_csv)):
-            if print_csv[n][3] == i:
-                print_csv[n][2] = lst_rand[k]
-                k += 1
-        dw= to_dict(print_csv, i)
-        cor = dict_cor(dw[0], dw[1])
-        rand_week_cor[i] = cor
+    for pc in lst:
+        if pc[2] > 2 and pc[3] == w:
+            if pc[0] not in lac_value:
+                lac_value[pc[0]] = '#ff0000'
+            if pc[1] not in lac_value:
+                lac_value[pc[1]] = '#ff0000'
+            G.add_node(str(pc[0]), title=str(pc[0]), color=lac_value[pc[0]])
+            G.add_node(str(pc[1]), title=str(pc[1]), color=lac_value[pc[1]])
+            G.add_edge(str(pc[0]), str(pc[1]), value=pc[2])
 
-    plt.figure()
-    plt.title('Week correlation')
-    plt.ylabel('Week correlation')
-    plt.xlabel('Weeks')
-    plt.bar(list(week_cor.keys()), week_cor.values(), color='g')
+    neighbor_map = G.get_adj_list()
 
-    plt.figure()
-    plt.title('Week correlation (shuffled pairs)')
-    plt.ylabel('Week correlation')
-    plt.xlabel('Weeks')
-    plt.bar(list(rand_week_cor.keys()), rand_week_cor.values(), color='g')
-    plt.show()
+    # add neighbor data to node hover data
+    for node in G.nodes:
+                    node["title"] += " Neighbors:\n" + "\n".join(neighbor_map[node["id"]])
+                    node["value"] = len(neighbor_map[node["id"]])
+
+    G.show_buttons(filter_=['physics'])
+    G.toggle_physics(True)
+    G.show(name+'_'+str(w)+'.html') 
 
 ### ----------------------------------------------------------------------------------------------------------------------------------
 ### Run code -------------------------------------------------------------------------------------------------------------------------
 ### ----------------------------------------------------------------------------------------------------------------------------------
 
 #- Get network list (data CSV, time cut off, value cut off)
+MILK_network_list_A6, _ = Robot_Milkings('RobotMilkings_A6.csv', 30, 1)
+MILK_network_list_random_A6 = Robot_Milkings_shuffle('RobotMilkings_A6_random.csv', 30, 1)
+MILK_network_list_F4, _= Robot_Milkings('RobotMilkings_F4.csv', 30, 1)
+MILK_network_list_random_F4 = Robot_Milkings_shuffle('RobotMilkings_F4_random.csv', 30, 1) 
 
-#network_list = Robot_Milkings('RobotMilkings_A6.csv', 10, 1)
-#network_list = Robot_Milkings('RobotMilkings_F4.csv', 10, 1)
+TRAFFIC_network_list_A6, _ = Waitroom_Traffic('Waitroom_Traffic_A6.csv', 1, 1)
+TRAFFIC_network_list_random_A6 = Waitroom_Traffic_shuffle('Waitroom_Traffic_A6_random.csv', 1, 1)
+TRAFFIC_network_list_F4, _= Waitroom_Traffic('Waitroom_Traffic_F4.csv', 2, 1)
+TRAFFIC_network_list_random_F4 = Waitroom_Traffic_shuffle('Waitroom_Traffic_F4_random.csv', 2, 1)
 
-network_list = Waitroom_Traffic('Waitroom_Traffic_A6.csv', 1, 1)
-#network_list = Waitroom_Traffic('Waitroom_Traffic_F4.csv', 1, 1)
+#- Plot visualisation of network (network list, week, random bool, traffic bool)
+## Might need "Live Server" extension or other appropriate way to open html code
+network_graph(MILK_network_list_A6, 100, 'Milk_network_A6') 
+network_graph(MILK_network_list_random_A6, 100, 'Milk_network_random_A6')
+network_graph(MILK_network_list_F4, 100, 'Milk_network_F4')
+network_graph(MILK_network_list_random_F4, 100, 'Milk_network_random_F4') 
+
+network_graph(TRAFFIC_network_list_A6, 80, 'Traffic_network_A6') 
+network_graph(TRAFFIC_network_list_random_A6, 80, 'Traffic_network_random_A6')
+network_graph(TRAFFIC_network_list_F4, 10, 'Traffic_network_F4')
+network_graph(TRAFFIC_network_list_random_F4, 10, 'Traffic_network_random_F4')
+
+def plotdata():
+    plt.figure(5)
+    plt.legend(["Original", "Randomized"])
+    plt.figure(6)
+    plt.legend(["Original", "Randomized"])
+    plt.figure(7)
+    plt.legend(["Original", "Randomized"])
+    plt.show()
 
 #- Plot data from network (network list, start week, end week)
-networkx_data(network_list,46,134)
+networkx_data(TRAFFIC_network_list_F4,0,13)
+networkx_data(TRAFFIC_network_list_random_F4,0,13)
+plotdata()
+networkx_data(TRAFFIC_network_list_A6,46,134)
+networkx_data(TRAFFIC_network_list_random_A6,46,134)
+plotdata()
 
-#- Plot visualisation of network (network list, week)
-network_graph(network_list, 60) ## Might need "Live Server" extension or other appropriate way to open html code
+""" networkx_data(MILK_network_list_A6,0,134) 
+networkx_data(MILK_network_list_random_A6,0,134)
+plotdata()
+networkx_data(MILK_network_list_A6,0,134)
+networkx_data(MILK_network_list_random_A6,0,134)
+plotdata() """
 
-#- Calculate and plot week correlation
-week_correlation(network_list)
+#- Include lactation in network graph
+network_listA6, first_trafficA6 = Waitroom_Traffic('Waitroom_Traffic_A6.csv', 1, 2)
+network_listF4, first_trafficF4 = Waitroom_Traffic('Waitroom_Traffic_F4.csv', 1, 2)
+network_lactation(network_listA6,lactation_list('Lactations_A6.csv'), 80, 'Traffic_network_A6_Lactation', first_trafficA6) 
+network_lactation(network_listF4,lactation_list('Lactations_F4.csv'), 10, 'Traffic_network_F4_Lactation', first_trafficF4) 
