@@ -5,28 +5,31 @@ import itertools
 import random
 import matplotlib.pyplot as plt
 def time_calc(list):
-    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2022,1,1)
+    t = datetime.datetime(int(list[0:4]), int(list[5:7]),int(list[8:10]), int(list[11:13]), int(list[14:16])) - datetime.datetime(2015,1,1)
     return int(t.total_seconds()//60)
 
-data = pd.read_csv('RobotMilkings_F4_traffic.csv')
+
+#use the outher data set f4
+""" data = pd.read_csv('RobotMilkings_F4_traffic.csv')
 #data = pd.read_csv('RobotMilkings_F4_traffic.csv')
 
 data['TrafficEventDateTime']=data['TrafficEventDateTime'].map(time_calc)
 data = data.sort_values(by=['TrafficEventDateTime'])
 data = data.reset_index(drop=True)
 star_time=data['TrafficEventDateTime']
-kor=data["Gigacow_Cow_Id"]
+kor=data["Gigacow_Cow_Id"] """
 
-""" data = pd.read_csv('RobotMilkings_A6.csv')
+#use the outher data set A6
+data = pd.read_csv('RobotMilkings_A6.csv')
 #data = pd.read_csv('RobotMilkings_F4.csv')
 
 data['MilkingStartDateTime']=data['MilkingStartDateTime'].map(time_calc)
 data = data.sort_values(by=['MilkingStartDateTime'])
 data = data.reset_index(drop=True)
 star_time=data['MilkingStartDateTime']
-kor=data["Gigacow_Cow_Id"] """
+kor=data["Gigacow_Cow_Id"]
 
-
+#prints relevent information
 print('-----Time Data-----')
 print(star_time)
 print('------Cow Data-----')
@@ -39,7 +42,7 @@ time=1
 cow_dict={}
 print_csv = []
 
-
+#used to save the right varibles
 def save_plot(cow_dict,w):
     cut_off= 1
     new_dict = {}
@@ -54,7 +57,7 @@ def save_plot(cow_dict,w):
         if value >= cut_off:
             print_csv.append([key[0],key[1], value, w])
 
-
+#used to create the right groups
 def cow_groups(lst):
     combs = []
     for r in range(len(lst)+1):
@@ -68,7 +71,9 @@ newcow=[[]]
 newcow[0]=[]
 cowinout=[]
 hold2=[]
+save=[]
 
+#used so only the new cows are saved
 def newcowfunc(l1,l2):
     weekcow=[[],[]]
     for i in l1:
@@ -79,6 +84,7 @@ def newcowfunc(l1,l2):
             weekcow[1].append(i)
     return weekcow
 
+#For loop that gose through the whole data set and takes out all the unique cows. 
 for i in range(len(kor)-1):
     if kor[i] not in hold2:
         hold2.append(kor[i]) 
@@ -87,6 +93,7 @@ for i in range(len(kor)-1):
         save_plot(cow_dict, week)
         cow_dict={}
         newcow.append(hold2)
+        save=hold2
         hold2=[]
         cowinout.append(newcowfunc(newcow[week-1],newcow[week]))
         week += 1
@@ -106,21 +113,7 @@ for i in range(len(kor)-1):
                     cow_dict[group]+=1
         hold=[]
 
-
-
-
-# Print export
-""" import csv
-
-header = ['cow1', 'cow2','num','week']
-with open('plot.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(header)
-    writer.writerows(print_csv) """
-
-
-
-
+#used to normalize the data
 def dictcor(d1, d2):
     diff=0
     tot=0
@@ -134,17 +127,7 @@ def dictcor(d1, d2):
         return 0
     return diff/tot
 
-""" def dictcor(d1,d2):
-    hold=0
-    
-    for (key) in d1:
-        if d1[key] > 5:
-            if key in d2:
-                hold+=1
-    if len(d2) == 0:
-        return 0
-    return hold/len(d2) """
-
+#conver to dic
 def to_dict(lst1, w):
     dict1 = {}
     dict2 = {}
@@ -156,41 +139,12 @@ def to_dict(lst1, w):
             dict2[(lst[0], lst[1])] = lst[2]
     return (dict1, dict2)
 
-
+#creats the dictionary to plot the data
 week_cor = {}
 for i in range(print_csv[-1][3]):
     dw= to_dict(print_csv, i)
     cor = dictcor(dw[0], dw[1])
     week_cor[i] = cor
-
-rand_week_cor = {}
-for i in range(print_csv[-1][3]):
-    lst_rand = []
-    for n in range(len(print_csv)):
-        if print_csv[n][3] == i:
-            lst_rand.append(print_csv[n][2])
-    random.shuffle(lst_rand)
-    k = 0
-    for n in range(len(print_csv)):
-        if print_csv[n][3] == i:
-            print_csv[n][2] = lst_rand[k]
-            k += 1
-    dw= to_dict(print_csv, i)
-    cor = dictcor(dw[0], dw[1])
-    rand_week_cor[i] = cor
-
-
-""" plt.figure(1)
-plt.ylabel('Week correlation')
-plt.xlabel('Weeks')
-plt.bar(list(week_cor.keys()), week_cor.values(), color='g')
-
-plt.figure(2)
-plt.title('Random')
-plt.ylabel('Week correlation')
-plt.xlabel('Weeks')
-plt.bar(list(rand_week_cor.keys()), rand_week_cor.values(), color='g')
-plt.show() """
 
 test1=[]
 test2=[]
@@ -200,7 +154,18 @@ for i in cowinout:
     test2.append(len(i[1]))
 
 
-print(test1)
+#Calculates the the amount of cows in the start and at the end
+k=0
+for i in save:
+    if i in newcow[1]:
+        k+=1
+    
+print(f'cows at end {len(save)}')
+print(f'cows at start {len(newcow[1])}')
+print (f'unique cows from the start to the end {k}')
+
+
+#plots
 plt.figure(1)
 plt.title('Cow difference, Farm: f454e660')
 plt.ylabel('Number of cows')
@@ -210,3 +175,4 @@ plt.bar(list(week_cor.keys())[1:],test1[1:] , color='r')
 plt.bar(list(week_cor.keys())[1:],test2[1:], color='g')
 plt.legend(["Cows leaving","New cows"])
 plt.show()
+
